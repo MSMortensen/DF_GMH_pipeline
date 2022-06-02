@@ -49,7 +49,6 @@
 # Load environment
 conda activate DF-2022.1
 
-##### RUN WITH MOCK
 ### STEP 1: SETTINGS
 export ANALYSIS_FILE=Analysis_settings.sh 
 
@@ -59,51 +58,6 @@ bash ./Check_if_ready.sh
 
 ### STEP 3: DEMULTIPLEX AND TRIM READS (incl QC)
 bash ./DemultiplexAndTrim.sh
-
-### STEP 4: RUN DADA2
-Rscript --vanilla RunDADA2.R
-
-##### RUN WITHOUT MOCK
-### STEP 1: SETTINGS
-export ANALYSIS_FILE=Analysis_settings_nm.sh 
-
-### STEP 2: VERIFICATION
-# Check necessary folders and create if necessary. Also verifies that files are available.
-bash ./Check_if_ready.sh
-
-### STEP 3: DEMULTIPLEX AND TRIM READS (incl QC)
-bash ./DemultiplexAndTrim.sh
-rm trimmed/NoMock.unknown.fastq
-
-### STEP 4: RUN DADA2
-Rscript --vanilla RunDADA2.R
-
-##### RUN WITHOUT pooling
-### STEP 1: SETTINGS
-export ANALYSIS_FILE=Analysis_settings_nopool.sh 
-
-### STEP 2: VERIFICATION
-# Check necessary folders and create if necessary. Also verifies that files are available.
-bash ./Check_if_ready.sh
-
-### STEP 3: DEMULTIPLEX AND TRIM READS (incl QC)
-bash ./DemultiplexAndTrim.sh
-rm trimmed/NoPool.unknown.fastq
-
-### STEP 4: RUN DADA2
-Rscript --vanilla RunDADA2.R
-
-##### RUN WITHOUT MOCK and without pooling
-### STEP 1: SETTINGS
-export ANALYSIS_FILE=Analysis_settings_nopoolnomock.sh 
-
-### STEP 2: VERIFICATION
-# Check necessary folders and create if necessary. Also verifies that files are available.
-bash ./Check_if_ready.sh
-
-### STEP 3: DEMULTIPLEX AND TRIM READS (incl QC)
-bash ./DemultiplexAndTrim.sh
-rm trimmed/NopoolNomock.unknown.fastq
 
 ### STEP 4: RUN DADA2
 Rscript --vanilla RunDADA2.R
