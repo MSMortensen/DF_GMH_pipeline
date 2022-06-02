@@ -1,15 +1,11 @@
-# Created:  2022-05-20	masmo
-# Updated:	2022-05-30	masmo	Modified order of commands to install WSL
 ##############################################################################
-###                          GENERAL INFORMATION                         ###
-##############################################################################
+###  GENERAL INFORMATION
 To run the pipeline you need use a linux environment with conda installed.
 On Windows I recommend using Windows subsystem for linux, but a virtual 
 machine running Linux would also be fine.
 
 ##############################################################################
-###                  INSTALL WINDOWS SUBSYSTEM FOR LINUX                   ###
-##############################################################################
+###  INSTALL WINDOWS SUBSYSTEM FOR LINUX
  
    - Open PowerShell as Administrator and run these two commands:
        dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
@@ -25,8 +21,7 @@ machine running Linux would also be fine.
            NOTE: You need to use the password chosen above
 
 ##############################################################################
-###                             INSTALL CONDA                              ###
-##############################################################################
+###  INSTALL CONDA
  
    - Open Ubuntu (or another version of linux)
    - download installation script
@@ -41,8 +36,7 @@ machine running Linux would also be fine.
        conda install wget
 
 ##############################################################################
-###                            GROUP PIPELINE                              ###
-##############################################################################
+###  GROUP PIPELINE
 
  All other files necessary to use the pipeline can be copied from:
 "O:\GutMicro\Tarmmikrobiologi gruppen - Gut Ecology group\Methods\NGS pipeline & QIIME\Current pipeline"
