@@ -47,16 +47,17 @@ conda install wget
 ```
 
 #  GROUP PIPELINE
-All other files necessary to use the pipeline can be copied from:
-> "O:\GutMicro\Tarmmikrobiologi gruppen - Gut Ecology group\Methods\NGS pipeline & QIIME\Current pipeline"
+All other files necessary to use the pipeline can be copied from this git repository:
+> Or alternatively from: "O:\GutMicro\Tarmmikrobiologi gruppen - Gut Ecology group\Methods\NGS pipeline & QIIME\Current pipeline"
 
 ## Further two step are required to finish the general setup of the pipeline:
 1) Install a conda environment by runnning:
 ```
+curl -sL "https://github.com/MSMortensen/DF_GMH_pipeline/blob/6a3052b7d43e359a5ff5af3cbf2a54d384a87374/CONDA_env_setup.yml" > "CONDA_env_setup.yml"
 conda env create -f CONDA_env_setup.yml
 ```
 2) Copy the folder "DB" to a location that you access when running conda
-> After copying the folder ensure that the correct path is set in the settings file in the "Code" folder
+> After copying the folder ensure that the correct path is set in the **settings.sh** file in the **analysis** folder
 > The following command will show you the full path to your current folder
 ```
 echo $PWD
@@ -64,5 +65,5 @@ echo $PWD
 Now everything is ready.
 
 # To run the pipeline do as follows:
-   - copy files from the folder "Code" into the folder where you will run your analyses
+   - Create a copy of the **analysis** folder and use that folder for your analysis
    - Open GMH_16S_Pipeline.sh and follow the instructions
