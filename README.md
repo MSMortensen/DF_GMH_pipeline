@@ -85,4 +85,11 @@ conda env create -f CONDA_env_setup.yml
 ### To run the pipeline do as follows:
 
 - Create a copy of the **analysis** folder and use that folder for your analysis
+```
+cp analysis ANALYSIS_FOLDER
+```
+
 - Enter the chosen folder, open GMH_16S_Pipeline.sh and follow the instructions
+```
+cd ANALYSIS_FOLDER
+```
