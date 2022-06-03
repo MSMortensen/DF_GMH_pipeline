@@ -22,49 +22,50 @@ errQuit <- function(mesg, status=1) { message("Error: ", mesg); q(status=status)
 args <- commandArgs(TRUE)
 
 ##############################################################################
-###                     CREATE DEFAULT ARGUMENT LIST                       ###
-##############################################################################
-#load libraries
-library("optparse",quietly = TRUE)
-
-# import and format arguments
-option_list = list(
-  make_option(c("-o", "--out_dir"), type="character", default="./out", help="File path for all output", metavar="character"),
-  make_option(c("-r", "--reference_dir"), type="character", default="~/DB", help="This file path has data from the prior script and this together",metavar="character"),
-  make_option(c("-n", "--nthreads"), type="numeric", default=0, help="The number of threads to use. Special values: 0 - detect available cores and use all except one.", metavar="number")
-); 
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser);
-
-##############################################################################
 ###                     	   LOAD LIBRARIES                              ###
 ##############################################################################
+cat("0) Load libraries and variables\n")
 suppressMessages(suppressWarnings(library(methods)))
 suppressMessages(suppressWarnings(library(dada2)))
 suppressMessages(suppressWarnings(library(RcppParallel)))
 suppressMessages(suppressWarnings(library(parallel)))
 suppressMessages(suppressWarnings(library(ggplot2)))
-
-cat("PACKAGES USED TO CALL ASVS:\nDADA2:", as.character(packageVersion("dada2")), "|",
-    "Rcpp:", as.character(packageVersion("Rcpp")), "|",
-    "RcppParallel:", as.character(packageVersion("RcppParallel")), "|",
-    "parallel:", as.character(packageVersion("parallel")), "|",
-    "ggplot2:", as.character(packageVersion("ggplot2")), "\n")
-
 suppressMessages(suppressWarnings(library(DECIPHER)))
 suppressMessages(suppressWarnings(library(phangorn)))
 suppressMessages(suppressWarnings(library(phyloseq)))
-cat("ADDITIONAL PACKAGES USED TO CREATE PHYLOSEQ OBJECT:\nphyloseq", as.character(packageVersion("phyloseq")), "|",
-  "DECIPHER:", as.character(packageVersion("DECIPHER")), "|",
-  "phangorn:", as.character(packageVersion("phangorn")), "\n")
+suppressMessages(suppressWarnings(library(optparse)))
+
+cat("PACKAGES USED:\nDADA2:", as.character(packageVersion("dada2")), "|",
+    "Rcpp:", as.character(packageVersion("Rcpp")), "|",
+    "RcppParallel:", as.character(packageVersion("RcppParallel")), "|",
+    "parallel:", as.character(packageVersion("parallel")), "|",
+    "ggplot2:", as.character(packageVersion("ggplot2")), "|", 
+    "phyloseq", as.character(packageVersion("phyloseq")), "|",
+    "DECIPHER:", as.character(packageVersion("DECIPHER")), "|",
+    "phangorn:", as.character(packageVersion("phangorn")), "|",
+    "optparse:", as.character(packageVersion("optparse")), "\n")
+##############################################################################
+###                     CREATE DEFAULT ARGUMENT LIST                       ###
+##############################################################################
+# import and format arguments
+option_list = list(
+  make_option(c("-s", "--settings_file"), type="character", default=NULL, help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
+  make_option(c("-o", "--out_dir"), type="character", default="./out", help="File path for all output", metavar="character"),
+  make_option(c("-r", "--reference_dir"), type="character", default="../DB", help="This file path has data from the prior script and this together",metavar="character"),
+  make_option(c("-n", "--nthreads"), type="numeric", default=0, help="The number of threads to use. Special values: 0 - detect available cores and use all except one.", metavar="number")
+); 
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
+
   
 ##############################################################################
 ###                        IMPORT ARGUMENTS FROM FILE                      ###
 ##############################################################################
-# Import settings from "Analysis_settings.sh" if it is present
-if (file.exists(Sys.getenv("ANALYSIS_FILE"))){
-  
-  tmp <- read.table(Sys.getenv("ANALYSIS_FILE"), header = F, comment.char = "#")
+# Import settings from settings file if provided
+if (!is.null(opt$settings_file) | file.exists(Sys.getenv("ANALYSIS_FILE"))){
+  if (is.null(opt$settings_file)){
+    tmp <- read.table(Sys.getenv("ANALYSIS_FILE"), header = F, comment.char = "#")
+  } else tmp <- read.table(opt$settings_file, header = F, comment.char = "#")
   vars <- as.data.frame( t( stringr::str_split(tmp[,2], "=", simplify = T ) ) )
   colnames(vars) <- vars[1,]
   vars <- vars[2,]
@@ -73,23 +74,15 @@ if (file.exists(Sys.getenv("ANALYSIS_FILE"))){
     if (!is.na(as.numeric(vars[,i]))) vars[,i] <-as.numeric(vars[,i]) 
   })
 
-  vars.list <- as.list(vars)
-
   # replace settings in opt
   for (i in 1:(length(opt)-1)){
-    opt[i][[1]] <- vars.list[names(opt)[i]][[1]]
+    if (names(opt)[i] != "settings_file") opt[i][[1]] <- vars[names(opt)[i]][[1]]
   }
 
-  rm(tmp, vars,vars.list)
+  rm(tmp, vars)
 }
-
 for (i in 1:(length(opt)-1)){
   if (is.character(opt[i][[1]])) opt[i][[1]] <- gsub("\\\"","",opt[i][[1]])
-}
-
- # replace reference dir setting
-if (opt$reference_dir == "~/DB") {
-    opt$reference_dir <- gsub("~",Sys.getenv("HOME"),opt$reference_dir)
 }
 
 ##############################################################################

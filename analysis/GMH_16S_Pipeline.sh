@@ -42,25 +42,27 @@
 #   - Run Step 5
 #       This combines all .rds files found in $out_dir
 #   - Import the produced .RData file into R and continue the analysis
-#       The name of the file is written in the last line from step 4
+#       The name of the file is written in the last line from step 5
 
-
+## As this is a combination of multiple analyses on the sample data I will only run STEP 3 once and then just copy the files
 ### STEP 0: PREPARATION
 # Load environment
 conda activate DF-2022.1
 
 ### STEP 1: SETTINGS
-export ANALYSIS_FILE=Analysis_settings.sh 
+# Create a copy of the settings file and make sure to change relevant variables
 
 ### STEP 2: VERIFICATION
 # Check necessary folders and create if necessary. Also verifies that files are available.
-bash ./Check_if_ready.sh
+bash ../scripts/Check_if_ready.sh -s settings.sh
 
 ### STEP 3: DEMULTIPLEX AND TRIM READS (incl QC)
-bash ./DemultiplexAndTrim.sh
+bash ../scripts/DemultiplexAndTrim.sh -s settings.sh
 
 ### STEP 4: RUN DADA2
-Rscript --vanilla RunDADA2.R
+# With standard settings
+Rscript --vanilla ../scripts/RunDADA2.R -s settings.sh
 
 ### STEP 5: MERGE RUNS
-Rscript --vanilla Merged_Analysis.R
+# Can also just be run with the settings from one of the runs being merged ("Rscript --vanilla Merged_Analysis.R -s settings.sh")
+Rscript --vanilla ../scripts/Merged_Analysis.R -o output -r ../DB -n 0

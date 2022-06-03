@@ -4,11 +4,49 @@
 # Updated:  2022-05-31  masmo   Added option for using sample names
 #           2022-06-02  masmo   Corrected printed name of final phyloseq file
 #
-##############################################################################
-# This script demultiplexes and trims IonTorrent 16S rRNA gene sequencing data
-# with standard settings for DTU FOOD Gut Microbio group using the DF-2022.1 
-# conda environment. Standard use is to run with settings from file.
-##############################################################################
+#
+############################################################
+# Help                                                     #
+############################################################
+Help()
+{
+   # Display Help
+   echo "This script verifies that the necessary files and folders are available for the pipeline,"
+   echo "creates folders and files if needed, and prints the relevant folders and locations"
+   echo
+   echo "Syntax: Check_if_ready.sh -s "SETTINGS_FILE" [options] [-h]"
+   echo "options:"
+   echo "  -s     Name of settings file to check"
+   echo "  -h     Print this Help."
+   echo
+}
+
+############################################################
+############################################################
+# Main program                                             #
+############################################################
+############################################################
+############################################################
+# Process the input options. Add options as needed.        #
+############################################################
+# Get the options
+while getopts ":hs:" option; do
+   case $option in
+      h) # display Help
+         Help
+         exit;;
+      s) # Enter a name
+         ANALYSIS_FILE=$OPTARG;;
+     \?) # Invalid option
+         echo "Error: Invalid option"
+         exit;;
+   esac
+done
+
+if [ -z "$ANALYSIS_FILE" ]; then
+    echo "A settings file must be provided"
+    exit 2;
+fi
 ##############################################################################
 ###                           CHECK SETTINGS FILE                          ###
 ##############################################################################
@@ -28,7 +66,7 @@ fi
 echo "This analysis if for run $RUN_NAME. "
 if [ $ANALYSIS == "PARTIAL" ]
     then
-        echo "A partial analysis will be run. The script 'RunDADA2.R' will stop after asv calling and $PWD/$out_dir/seqtab_out.rds must be included as input to 'Merge_Runs.R'"
+        echo "A partial analysis will be run. The script 'RunDADA2.R' will stop after asv calling and $out_dir/$RUN_NAME.seqtab_out.rds must be included as input to 'Merge_Runs.R'"
     else 
         echo "A full analysis will be run. The script 'RunDADA2.R' will produce a phyloseq object named 'phy' which can be loaded into R by loading the .RData file ($out_dir/$RUN_NAME.phyloseq_object.RData)"
 fi
@@ -42,8 +80,10 @@ if [[ ! -e $TRIM ]]; then mkdir $TRIM; elif [[ ! -d $TRIM ]]; then echo "$TRIM a
 if [[ ! -e $DEMUX ]]; then mkdir $DEMUX; elif [[ ! -d $DEMUX ]]; then echo "$DEMUX already exists but is not a directory"; else echo "Any files in the folder $DEMUX might be overwritten"; fi
 if [[ ! -e $OUT ]]; then mkdir $OUT; elif [[ ! -d $OUT ]]; then echo "$OUT already exists but is not a directory"; else echo "Any files in the folder $OUT might be overwritten"; fi
 if [ ! -f "$INPUT" ]; then echo "The input file ($INPUT) is missing."; fi
-if [ ! -f "RunDADA2.R" ]; then echo "The Rscript (CreateASV.R) is missing. please copy to $PWD"; fi
-if [ $reference_dir == "~/DB" ]; then export reference_dir=$HOME/DB; fi
+
+PLOC=$(echo $PWD | sed 's![^/]*$!!')
+if [ ! -f "$PLOC/scripts/RunDADA2.R" ]; then echo "The Rscript (RunDADA2.R) is missing. please copy to $PLOC/scripts/\n"; fi
+if [ $reference_dir == "../DB" ]; then export reference_dir=$PLOC/DB; fi
 if [ ! -f "$reference_dir/rdp_train_set_18.fa.gz" ]; then echo "The database to assign taxonomy is missing. please copy to $reference_dir"; fi
 if [ ! -f "$reference_dir/rdp_species_assignment_18.fa.gz" ]; then echo "The database to assign species is missing. please copy to $reference_dir"; fi
 
@@ -51,7 +91,7 @@ if [ ! -f "$reference_dir/rdp_species_assignment_18.fa.gz" ]; then echo "The dat
 ###                          CONFIGURE INDEX FILE                          ###
 ##############################################################################
 # Set the index file and create one if necessary
-export INDECES="Indeces.fasta"
+export INDECES="$reference_dir/Indeces.fasta"
 if [ ! $USE_SAMPLE_NAMES = true ]
     then 
         if [ ! -f "$INDECES" ]

@@ -23,7 +23,8 @@ args <- commandArgs(TRUE)
 
 ##############################################################################
 ###                     	   LOAD LIBRARIES                              ###
-##############################################################################
+###############################################################################
+cat("0) Load libraries and variables\n")
 suppressMessages(suppressWarnings(library(methods)))
 suppressMessages(suppressWarnings(library(dada2)))
 suppressMessages(suppressWarnings(library(RcppParallel)))
@@ -38,7 +39,8 @@ cat("PACKAGES USED TO CALL ASVS:\nDADA2:", as.character(packageVersion("dada2"))
     "Rcpp:", as.character(packageVersion("Rcpp")), "|",
     "RcppParallel:", as.character(packageVersion("RcppParallel")), "|",
     "parallel:", as.character(packageVersion("parallel")), "|",
-    "ggplot2:", as.character(packageVersion("ggplot2")), "\n")
+    "ggplot2:", as.character(packageVersion("ggplot2")), "|",
+    "optparse:", as.character(packageVersion("optparse")), "\n")
 cat("ADDITIONAL PACKAGES USED IF FULL PIPELINE IS RUN:\nphyloseq", as.character(packageVersion("phyloseq")), "|",
     "DECIPHER:", as.character(packageVersion("DECIPHER")), "|",
     "phangorn:", as.character(packageVersion("phangorn")), "\n")
@@ -48,12 +50,13 @@ cat("ADDITIONAL PACKAGES USED IF FULL PIPELINE IS RUN:\nphyloseq", as.character(
 ##############################################################################
 # import and format arguments
 option_list = list(
+  make_option(c("-s", "--settings_file"), type="character", default=NULL, help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
   make_option(c("-A", "--ANALYSIS"), type="character", default="FULL", help='When set to "PARTIAL", the analysis will be stopped after ASV calling as all following analyses are performed by the script Merge_Runs.R', metavar="number"),
   make_option(c("-R", "--RUN_NAME"), type="character", default="./trimmed", help="File path to directory with the .fastq files to be processed", metavar="character"),
   make_option(c("-i", "--in_dir"), type="character", default="./trimmed", help="File path to directory with the .fastq files to be processed", metavar="character"),
   make_option(c("-o", "--out_dir"), type="character", default="./out", help="File path for all output", metavar="character"),
   make_option(c("-f", "--filter_dir"), type="character", default="./filtered", help="File path to directory in which to write the filtered .fastq.gz files. These files are intermediate for the full workflow. Currently they remain after the script finishes.", metavar="character"),
-  make_option(c("-r", "--reference_dir"), type="character", default="~/DB", help="This file path has data from the prior script and this together",metavar="character"),
+  make_option(c("-r", "--reference_dir"), type="character", default="../DB", help="This must point to the folder with the reference database",metavar="character"),
   make_option(c("-t", "--truncLen"), type="numeric", default=0, help="The position at which to truncate reads. Reads shorter than truncLen will be discarded. Special values: 0 - no truncation or length filtering.", metavar="number"),
   make_option(c("-T", "--trimLeft"), type="numeric", default=0, help="The number of nucleotides to remove from the start of each read. Should be less than truncLen for obvious reasons.", metavar="number"),
   make_option(c("-e", "--maxEE"), type="numeric", default=2, help="Reads with expected errors higher than maxEE are discarded.", metavar="number"),
@@ -73,9 +76,11 @@ opt = parse_args(opt_parser);
 ##############################################################################
 ###                        IMPORT ARGUMENTS FROM FILE                      ###
 ##############################################################################
-# Import settings from "Analysis_settings.sh" if it is present
-if (file.exists(Sys.getenv("ANALYSIS_FILE"))){
+# Import settings from settings file if provided
+if (!is.null(opt$settings_file) | file.exists(Sys.getenv("ANALYSIS_FILE"))){
+  if (is.null(opt$settings_file)){
     tmp <- read.table(Sys.getenv("ANALYSIS_FILE"), header = F, comment.char = "#")
+  } else tmp <- read.table(opt$settings_file, header = F, comment.char = "#")
   vars <- as.data.frame( t( stringr::str_split(tmp[,2], "=", simplify = T ) ) )
   colnames(vars) <- vars[1,]
   vars <- vars[2,]
@@ -84,23 +89,17 @@ if (file.exists(Sys.getenv("ANALYSIS_FILE"))){
     if (!is.na(as.numeric(vars[,i]))) vars[,i] <-as.numeric(vars[,i]) 
   })
 
-  vars.list <- as.list(vars)
-
   # replace settings in opt
   for (i in 1:(length(opt)-1)){
-    opt[i][[1]] <- vars[names(opt)[i]][[1]]
+    if (names(opt)[i] != "settings_file") opt[i][[1]] <- vars[names(opt)[i]][[1]]
   }
 
-  rm(tmp, vars,vars.list)
+  rm(tmp, vars)
 }
 for (i in 1:(length(opt)-1)){
   if (is.character(opt[i][[1]])) opt[i][[1]] <- gsub("\\\"","",opt[i][[1]])
 }
 
- # replace reference dir setting
-if (opt$reference_dir == "~/DB") {
-    opt$reference_dir <- gsub("~",Sys.getenv("HOME"),opt$reference_dir)
-}
 ##############################################################################
 ###                            VALIDATE ARGUMENTS                          ###
 ##############################################################################
@@ -246,7 +245,7 @@ saveRDS(seq.out, file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.rds",sep =
 cat("seqtab file (needed to merge runs) stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.rds", sep = ".")),"\n",sep = "")
 
 # Stop the script if running partial analysis
-if (opt$ANALYSIS == "PARTIAL") errQuit("ASV calling complete, remaining analyses will be performed by the script Merged_Analysis.R") 
+if (opt$ANALYSIS == "PARTIAL") message("ASV calling complete, remaining analyses will be performed by the script Merged_Analysis.R"); q(status=0) 
 
 ##############################################################################
 ###                     ASSIGN TAXONOMY AND PHYLOGENY                      ###
