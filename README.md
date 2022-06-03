@@ -62,6 +62,7 @@ conda install wget
 # GROUP PIPELINE
 
 All files necessary to use the pipeline can be downloaded from github.
+
 To do this open Ubuntu and run the following command:
 
 ```
