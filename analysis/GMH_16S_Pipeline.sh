@@ -47,7 +47,7 @@
 ## As this is a combination of multiple analyses on the sample data I will only run STEP 3 once and then just copy the files
 ### STEP 0: PREPARATION
 # Load environment
-conda activate DF-2022.1
+conda activate DF-2022.1.1
 
 ### STEP 1: SETTINGS
 # Create a copy of the settings file and make sure to change relevant variables
