@@ -2,7 +2,7 @@
 
 # Created:  2022-05-20  masmo
 # Updated:  2022-05-31  masmo   Added option for using sample names
-#
+#           2022-06-08  masmo   Fixed default location of reference database
 ##############################################################################
 ###                         HOW TO USE THIS SCRIPT                         ###
 ##############################################################################
@@ -50,7 +50,7 @@ export SAMPLE_FILE="sample_tags.tsv"
 ### FILES AND FOLDERS
 # Name of the input fastq file
 #	NOTE: Must be updated
-export INPUT="R_2021_10_05_12_05_48_user_GSS5-0533-66-Martin_Frederik_Laursen_run_10.fastq"
+export INPUT="Input.fastq"
 #
 # Path where demultiplexed files will be stored
 #	NOTE: These files can be removed after analyses
@@ -79,7 +79,7 @@ export filter_dir="./filtered"
 # Path to the reference database.
 #	NOTE:	The reference database should not change between runs
 #			Therefore, this should always be the same for you
-export reference_dir="~/DB" 
+export reference_dir="../DB" 
 #
 ##############################################################################
 ###                           ADVANCED SETTINGS                            ###

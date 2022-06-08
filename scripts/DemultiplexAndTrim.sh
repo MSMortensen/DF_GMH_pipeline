@@ -62,7 +62,7 @@ if [ $nthreads==0 ]; then CORES=$(($(nproc)-1)); else CORES=$nthreads; fi
 ##############################################################################
 ###                           DEMULTIPLEX SAMPLES                          ###
 ##############################################################################
-cat("1) Demultiplex samples\n")
+echo "1) Demultiplex samples"
 # Demultiplex using cutadapt
 cutadapt -e 0.15 --no-indels -g file:$INDECES --cores=$CORES -o "$DEMUX/$RUN_NAME.{name}.fastq" $INPUT
 
@@ -73,7 +73,7 @@ echo "sample status  in_reads        in_bp   too_short       too_long        too
 ##############################################################################
 ###                               TRIM READS                               ###
 ##############################################################################
-cat("2) Trim reads\n")
+echo "2) Trim reads"
 # Trim adapters from demultiplexed reads
 # At the same time we trim the length of the reads to be between 110 and 180 bp 
 # Primers: "5' PBU_Fw CCTACGGGAGGCAGCAG" and "3' PBR_Rev CCAGCAGCCGCGGTAAT"
@@ -89,7 +89,7 @@ rm $TRIM/$RUN_NAME.unknown.fastq
 ##############################################################################
 ###                               RUN FASTQC                               ###
 ##############################################################################
-cat("3) Run FastQC\n")
+echo "3) Run FastQC"
 # Run fastqc to analyse sequence quality
 cat $TRIM/$RUN_NAME.*.fastq > $RUN_NAME.fastq
 fastqc -o $OUT -t 4 $RUN_NAME.fastq

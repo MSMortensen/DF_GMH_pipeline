@@ -14,7 +14,8 @@ dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /nores
 ```
 
 - Restart your computer
-- Go to Microsoft store
+- Go to Microsoft store and install your preferred version of Linux
+> If you want to have a Linux desktop the Kali version might be better. Open [this page](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242) and search for "Third option"
 - Install "Ubuntu 20.04.4 LTS" (a different version should be ok)
 - Open Ubuntu and choose username + password
 
@@ -53,10 +54,11 @@ bash Miniconda3.sh
 conda update conda
 ```
 
-- Install wget for Conda
+- Install wget and git for Conda
 
 ```
 conda install wget
+conda install git
 ```
 
 # GROUP PIPELINE
