@@ -56,7 +56,7 @@ if [ ! -f $ANALYSIS_FILE ]
         exit 0
     else 
         source $ANALYSIS_FILE
-        echo "The analyses settings are read from $ANALYSIS_FILE and stored in ${RUN_NAME}_settings.txt"
+        echo "The analyses settings are read from $ANALYSIS_FILE and stored in $out_dir/${RUN_NAME}_settings.txt"
 fi
 
 ##############################################################################
@@ -83,7 +83,7 @@ if [ ! -f "$INPUT" ]; then echo "The input file ($INPUT) is missing."; fi
 
 PLOC=$(echo $PWD | sed 's![^/]*$!!')
 if [ ! -f "$PLOC/scripts/RunDADA2.R" ]; then echo "The Rscript (RunDADA2.R) is missing. please copy to $PLOC/scripts/\n"; fi
-if [ $reference_dir == "../DB" ]; then export reference_dir=$PLOC/DB; fi
+if [ $reference_dir == "../DB" ]; then export reference_dir=${PLOC}DB; fi
 if [ ! -f "$reference_dir/rdp_train_set_18.fa.gz" ]; then echo "The database to assign taxonomy is missing. please copy to $reference_dir"; fi
 if [ ! -f "$reference_dir/rdp_species_assignment_18.fa.gz" ]; then echo "The database to assign species is missing. please copy to $reference_dir"; fi
 
@@ -100,16 +100,16 @@ if [ ! $USE_SAMPLE_NAMES = true ]
     elif [ ! -f "$SAMPLE_FILE" ]
         then echo "The sample file ($SAMPLE_FILE) is missing."
     else
-        if [ -f "${RUN_NAME}_indeces.fasta" ]
+        if [ -f "$out_dir/${RUN_NAME}_indeces.fasta" ]
             then 
-                echo "WARNING: The file ${RUN_NAME}_indeces.fasta already exists. Please update the run name or remove the file. when solved run STEP 2 again"
+                echo "WARNING: The file $out_dir/${RUN_NAME}_indeces.fasta already exists. Please update the run name or remove the file. when solved run STEP 2 again"
                 exit 0
             else 
                 while read -r TAG SAMPLE; do
-                    grep -A 1 $TAG $INDECES | sed "s/$TAG/$SAMPLE/g" >> ${RUN_NAME}_indeces.fasta
+                    grep -A 1 $TAG $INDECES | sed "s/$TAG/$SAMPLE/g" >> $out_dir/${RUN_NAME}_indeces.fasta
                 done < $SAMPLE_FILE            
         fi
-        export INDECES="${RUN_NAME}_indeces.fasta"
+        export INDECES="$out_dir/${RUN_NAME}_indeces.fasta"
 fi
 echo "Sample indeces will be read from $INDECES"
 echo "export INDECES=$INDECES" >> $ANALYSIS_FILE
@@ -117,4 +117,4 @@ echo "export INDECES=$INDECES" >> $ANALYSIS_FILE
 ##############################################################################
 ###                         SAVE SETTINGS TO FILE                          ###
 ##############################################################################
-grep "^export" $ANALYSIS_FILE > ${RUN_NAME}_settings.txt
+grep "^export" $ANALYSIS_FILE > $out_dir/${RUN_NAME}_settings.txt

@@ -125,7 +125,7 @@ if(!dir.exists(opt$out_dir)) {
 cat("Output folder:", opt$out_dir, "\n")
 
 tmp <- list.files(opt$out_dir, pattern=paste0(opt$RUN_NAME), full.names=FALSE)
-tmp <- tmp[!grepl("html|zip|txt",tmp)]
+tmp <- tmp[!grepl("html|zip|txt|fasta",tmp)]
 if(length(tmp) > 0) errQuit("The planned output files already exists")
 
 ##############################################################################
@@ -298,7 +298,7 @@ row.names(asv_table) <- paste(opt$RUN_NAME, sample.names, sep = "_")
 # Create metadata file
 map <- data.frame(
   row.names = row.names(asv_table),
-  Tag = stringr::str_split(sample.names,"\\.",simplify=TRUE)[,2],
+  Sample = stringr::str_split(sample.names,"\\.",simplify=TRUE)[,2],
   Run = opt$RUN_NAME,
   reads = rowSums(asv_table),
   ASVs = rowSums(asv_table > 0)

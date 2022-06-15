@@ -173,7 +173,6 @@ phy <- phyloseq(otu_table(asv_table, taxa_are_rows=FALSE), tax_table(taxa.plus),
 # Currently, the phylogenetic tree is not rooted Though it is not necessary here, you will need to root the tree if you want to calculate any phylogeny based diversity metrics (like Unifrac)
 set.seed(711) # As there is some randomness in this process, setting the seed ensures reproducibility
 phy_tree(phy) <- root(phy_tree(phy), sample(taxa_names(phy), 1), resolve.root = TRUE)
-is.rooted(phy_tree(phy))
 
 ##############################################################################
 ###                              CREATE PLOTS                              ###
