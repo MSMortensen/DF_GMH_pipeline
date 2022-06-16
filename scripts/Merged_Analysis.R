@@ -162,7 +162,7 @@ colnames(asv_table) <- paste("ASV", stringr::str_pad(1:ncol(full.seqtab),4, pad 
 # Create metadata file
 map <- data.frame(
   row.names = row.names(asv_table),
-  Tag = stringr::str_split(row.names(asv_table),"\\.",simplify=TRUE)[,2],
+  Sample = stringr::str_split(row.names(asv_table),"\\.",simplify=TRUE)[,2],
   Run = stringr::str_split(row.names(asv_table),"_",simplify=T)[,1],
   reads = rowSums(asv_table),
   ASVs = rowSums(asv_table > 0)
