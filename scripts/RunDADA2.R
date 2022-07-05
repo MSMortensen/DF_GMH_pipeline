@@ -245,8 +245,10 @@ saveRDS(seq.out, file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.rds",sep =
 cat("seqtab file (needed to merge runs) stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.rds", sep = ".")),"\n",sep = "")
 
 # Stop the script if running partial analysis
-if (opt$ANALYSIS == "PARTIAL") message("ASV calling complete, remaining analyses will be performed by the script Merged_Analysis.R"); q(status=0) 
-
+if (opt$ANALYSIS == "PARTIAL") {
+  message("ASV calling complete, remaining analyses will be performed by the script Merged_Analysis.R")
+  q(status=0)
+}
 ##############################################################################
 ###                     ASSIGN TAXONOMY AND PHYLOGENY                      ###
 ##############################################################################
