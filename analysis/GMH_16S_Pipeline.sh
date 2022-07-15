@@ -17,50 +17,56 @@
 #   NOTE: I recommend renaming the file for each analysis
 #   REMEMBER: Update step 1 to point to the correct file
 #
-# # To run the analysis always
+##############################################################################
+###                                ALWAYS                                  ###
+##############################################################################
+#
+#   - Create a <PROJECT_FOLDER> (in the pipeline folder)
 #   - Run step 0
-#       If resuming analyses remember to run step 0 and step 1 before any script
-# 
-##############################################################################
-###                         SINGLE SEQUENCING RUN                          ###
-##############################################################################
-# 
+#       If resuming analyses remember to run step 0 before any script
 #   - Run step 1-4
-#   - Import the produced .RData file into R and continue the analysis
+#   - Pipeline output is exported into an .RData file
 #       The name of the file is written in the last line from step 4
 #
 ##############################################################################
 ###                       MULTIPLE SEQUENCING RUNS                         ###
 ##############################################################################       
 #
-#   - Create a copy of Analysis_settings for each run
-#   - Ensure that the following IF the content and name of the settings file.
-#   - Run step 0
-#       If resuming analyses remember to run step 0 and step 1 before any script
-#   - Run step 1-4 for each run
-#       REMEMBER TO UPDATE THE NAME OF THE FILE IN STEP 1
+#   After finishing the prior analyses for all runs
 #   - Run Step 5
 #       This combines all .rds files found in $out_dir
-#   - Import the produced .RData file into R and continue the analysis
+#   - Pipeline output is exported into an .RData file
 #       The name of the file is written in the last line from step 5
+#
+##############################################################################
+###                               PIPELINE                                 ###
+##############################################################################  
 
-## As this is a combination of multiple analyses on the sample data I will only run STEP 3 once and then just copy the files
 ### STEP 0: PREPARATION
 # Load environment
 conda activate DF-2022.1.1
 
-### STEP 1: SETTINGS
-# Create a copy of the settings file and make sure to change relevant variables
+# Move to project folder
+cd ~/Github/DF_GMH_pipeline/<PROJECT_FOLDER>
+
+### STEP 1: SETTINGS AND FILES
+# Copy files to <PROJECT_FOLDER>
+cp ~/Github/DF_GMH_pipeline/analysis/* ~/Github/DF_GMH_pipeline/<PROJECT_FOLDER>/
+
+# Create a copy of the settings file for each run and make sure to change relevant variables
 
 ### STEP 2: VERIFICATION
-# Check necessary folders and create if necessary. Also verifies that files are available.
+# Check necessary folders exist and create if necessary. Also verifies that files are available. 
+# > If multiple runs copy command and edit name of the settings file 
 bash ../scripts/Check_if_ready.sh -s settings.sh
 
 ### STEP 3: DEMULTIPLEX AND TRIM READS (incl QC)
+# > If multiple runs copy command and edit name of the settings file 
 bash ../scripts/DemultiplexAndTrim.sh -s settings.sh
 
 ### STEP 4: RUN DADA2
 # With standard settings
+# > If multiple runs copy command and edit name of the settings file 
 Rscript --vanilla ../scripts/RunDADA2.R -s settings.sh
 
 ### STEP 5: MERGE RUNS
