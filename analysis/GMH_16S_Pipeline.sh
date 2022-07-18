@@ -51,7 +51,7 @@ cd ~/Github/DF_GMH_pipeline/<PROJECT_FOLDER>
 
 ### STEP 1: SETTINGS AND FILES
 # Copy files to <PROJECT_FOLDER>
-cp ~/Github/DF_GMH_pipeline/analysis/* ~/Github/DF_GMH_pipeline/<PROJECT_FOLDER>/
+cp ../analysis/* .
 
 # Create a copy of the settings file for each run and make sure to change relevant variables
 
