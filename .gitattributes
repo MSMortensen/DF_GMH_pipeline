@@ -1,0 +1,4 @@
+# Auto detect text files and perform LF normalization
+scripts/* eol=lf
+analysis/* eol=lf
+DB/* eol=lf
