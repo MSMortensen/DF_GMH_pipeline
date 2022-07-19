@@ -35,13 +35,15 @@ suppressMessages(suppressWarnings(library(phyloseq)))
 suppressMessages(suppressWarnings(library(DECIPHER)))
 suppressMessages(suppressWarnings(library(phangorn)))
 
-cat("PACKAGES USED TO CALL ASVS:\nDADA2:", as.character(packageVersion("dada2")), "|",
+cat("PACKAGES USED TO CALL ASVS:\n",
+    "DADA2:", as.character(packageVersion("dada2")), "|",
     "Rcpp:", as.character(packageVersion("Rcpp")), "|",
     "RcppParallel:", as.character(packageVersion("RcppParallel")), "|",
     "parallel:", as.character(packageVersion("parallel")), "|",
     "ggplot2:", as.character(packageVersion("ggplot2")), "|",
     "optparse:", as.character(packageVersion("optparse")), "\n")
-cat("ADDITIONAL PACKAGES USED IF FULL PIPELINE IS RUN:\nphyloseq", as.character(packageVersion("phyloseq")), "|",
+cat("ADDITIONAL PACKAGES USED IF FULL PIPELINE IS RUN:\n",
+    "phyloseq", as.character(packageVersion("phyloseq")), "|",
     "DECIPHER:", as.character(packageVersion("DECIPHER")), "|",
     "phangorn:", as.character(packageVersion("phangorn")), "\n")
 
@@ -50,9 +52,10 @@ cat("ADDITIONAL PACKAGES USED IF FULL PIPELINE IS RUN:\nphyloseq", as.character(
 ##############################################################################
 # import and format arguments
 option_list = list(
-  make_option(c("-s", "--settings_file"), type="character", default=NULL, help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
+  make_option(c("-s", "--settings_file"), type="character", default="settings_pak.sh", help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
   make_option(c("-A", "--ANALYSIS"), type="character", default="FULL", help='When set to "PARTIAL", the analysis will be stopped after ASV calling as all following analyses are performed by the script Merge_Runs.R', metavar="number"),
-  make_option(c("-R", "--RUN_NAME"), type="character", default="./trimmed", help="File path to directory with the .fastq files to be processed", metavar="character"),
+  make_option(c("-P", "--PROJECT_NAME"), type="character", default=NA, help="Name of the current project", metavar="character"),
+  make_option(c("-S", "--SEQ_RUN"), type="character", default=NA, help="Name of the sequencing run in which the samples were sequenced", metavar="character"),
   make_option(c("-i", "--in_dir"), type="character", default="./trimmed", help="File path to directory with the .fastq files to be processed", metavar="character"),
   make_option(c("-o", "--out_dir"), type="character", default="./out", help="File path for all output", metavar="character"),
   make_option(c("-f", "--filter_dir"), type="character", default="./filtered", help="File path to directory in which to write the filtered .fastq.gz files. These files are intermediate for the full workflow. Currently they remain after the script finishes.", metavar="character"),
@@ -77,28 +80,35 @@ opt = parse_args(opt_parser);
 ###                        IMPORT ARGUMENTS FROM FILE                      ###
 ##############################################################################
 # Import settings from settings file if provided
-if (!is.null(opt$settings_file) | file.exists(Sys.getenv("ANALYSIS_FILE"))){
-  if (is.null(opt$settings_file)){
-    tmp <- read.table(Sys.getenv("ANALYSIS_FILE"), header = F, comment.char = "#")
-  } else tmp <- read.table(opt$settings_file, header = F, comment.char = "#")
-  vars <- as.data.frame( t( stringr::str_split(tmp[,2], "=", simplify = T ) ) )
-  colnames(vars) <- vars[1,]
-  vars <- vars[2,]
+if (!is.null(opt$settings_file)) {
+  tmp <- readLines(opt$settings_file)
+  tmp <- tmp[grepl("export",tmp)]
+  var.tmp <- stringr::str_split(tmp[!grepl("in_dir",tmp)], " ", simplify = T )[,2]
+  vars <- as.data.frame( stringr::str_split(var.tmp, "=", simplify = T ) )
+  row.names(vars) <- vars[,1]
+  vars$V1 <- NULL
+  
+  # Create the in_dir variable
+  if (file.exists(as.character(vars["SAMPLE_FILE",]))) vars["in_dir",] <- paste(vars["SEQ_RUN",],"fastq", sep = "_") else vars["in_dir",] <- paste(vars["PROJECT_NAME",],"fastq", sep = "_")
 
-  suppressWarnings(for (i in 1:ncol(vars)) {
-    if (!is.na(as.numeric(vars[,i]))) vars[,i] <-as.numeric(vars[,i]) 
-  })
+  # Fix the out_dir variable
+  if (vars["out_dir",] == "$OUT") vars["out_dir",] <- vars["OUT",] 
 
   # replace settings in opt
-  for (i in 1:(length(opt)-1)){
-    if (names(opt)[i] != "settings_file") opt[i][[1]] <- vars[names(opt)[i]][[1]]
+  for (i in 1:(length(opt))){
+    if (names(opt)[i] != "settings_file") opt[i][[1]] <- ifelse(is.numeric(opt[i][[1]]), as.numeric(vars[names(opt)[i],]),vars[names(opt)[i],])
   }
 
   rm(tmp, vars)
 }
-for (i in 1:(length(opt)-1)){
+
+# Remove unwanted characters
+for (i in 1:(length(opt))){
   if (is.character(opt[i][[1]])) opt[i][[1]] <- gsub("\\\"","",opt[i][[1]])
 }
+
+# Add PROJECT_RUN variable
+opt$PROJECT_RUN <- paste(opt$PROJECT_NAME,opt$SEQ_RUN, sep = ".")
 
 ##############################################################################
 ###                            VALIDATE ARGUMENTS                          ###
@@ -124,24 +134,22 @@ if(!dir.exists(opt$out_dir)) {
 }
 cat("Output folder:", opt$out_dir, "\n")
 
-tmp <- list.files(opt$out_dir, pattern=paste0(opt$RUN_NAME), full.names=FALSE)
-tmp <- tmp[!grepl("html|zip|txt|fasta",tmp)]
-if(length(tmp) > 0) errQuit("The planned output files already exists")
+# Stop script if output files already exist
+if(length(list.files(opt$out_dir, pattern=opt$PROJECT_RUN, full.names=FALSE)) > 0) errQuit("The planned output files already exists")
+
+# Stop script if  input folder does not exist
+if(!dir.exists(opt$in_dir)) errQuit("Input directory does not exist.")
 
 ##############################################################################
 ###                           TRIM AND FILTER                              ###
 ##############################################################################
 # Input directory is expected to contain .fastq file(s) that have not yet been 
 # filtered and globally trimmed to the same length.
-if(!dir.exists(opt$in_dir)) {
-  errQuit("Input directory does not exist.")
-} else {
-  unfilts <- list.files(opt$in_dir, pattern=".fastq$", full.names=TRUE) # Finds fastq files
-  unfilts <- unfilts[grepl(opt$RUN_NAME, unfilts)] # keeps only the ones named with the defined RUN_NAME
-  if(length(unfilts) == 0) {
-    errQuit("No input files with the expected filename format found.")
-  }
-}
+unfilts <- list.files(opt$in_dir, pattern=".fastq$", full.names=TRUE) # Finds fastq files
+unfilts <- unfilts[grepl(opt$PROJECT_RUN, unfilts)] # keeps only the ones named with the defined RUN_NAME
+
+# Stop if there are no matching input files
+if(length(unfilts) == 0) errQuit("No input files with the expected filename format found.")
 
 # Trim and filter
 cat("1) Filtering\n")
@@ -165,7 +173,7 @@ err <- suppressWarnings(learnErrors(filts, nreads=opt$nreads_learn, multithread=
                    HOMOPOLYMER_GAP_PENALTY=opt$HOMOPOLYMER_GAP_PENALTY, BAND_SIZE=opt$BAND_SIZE))
 
 # Just as a sanity check
-ggsave(filename = paste(opt$RUN_NAME,"dada2_ErrorModel.pdf", sep = "."),
+ggsave(filename = paste(opt$PROJECT_RUN,"dada2_ErrorModel.pdf", sep = "."),
   plot = plotErrors(err, nominalQ=TRUE),
   device = "pdf",
   path = opt$out_dir,
@@ -174,7 +182,7 @@ ggsave(filename = paste(opt$RUN_NAME,"dada2_ErrorModel.pdf", sep = "."),
   units = "cm",
   dpi = 300)
 
-cat("Dada2 error model:", file.path(opt$out_dir, paste(opt$RUN_NAME,"dada2_ErrorModel.pdf", sep = ".")),"\n")
+cat("Dada2 error model:", file.path(opt$out_dir, paste(opt$PROJECT_RUN,"dada2_ErrorModel.pdf", sep = ".")),"\n")
 
 ##############################################################################
 ###                         PERFORM ASV CALLING                            ###
@@ -195,7 +203,7 @@ cat("Dataset contains ", ncol(seqtab), " ASVs from ",nrow(seqtab), " samples\n",
 
 # Inspect distribution of sequence lengths
 dat <- data.frame(number = 1:ncol(seqtab), seq_length = nchar(getSequences(seqtab)))
-ggsave(filename = paste(opt$RUN_NAME,"ASV_sequence_lengths.pdf",sep = "."),
+ggsave(filename = paste(opt$PROJECT_RUN,"ASV_sequence_lengths.pdf",sep = "."),
   plot = ggplot(dat, aes(x = seq_length)) + geom_histogram(binwidth = 1),
   device = "pdf",
   path = opt$out_dir,
@@ -204,7 +212,7 @@ ggsave(filename = paste(opt$RUN_NAME,"ASV_sequence_lengths.pdf",sep = "."),
   units = "cm",
   dpi = 300)
 
-cat("Histogram of ASV lengths:", file.path(opt$out_dir, paste(opt$RUN_NAME,"ASV_sequence_lengths.pdf", sep = ".")),"\n")
+cat("Histogram of ASV lengths:", file.path(opt$out_dir, paste(opt$PROJECT_RUN,"ASV_sequence_lengths.pdf", sep = ".")),"\n")
 
 # Remove chimeras
 cat("4) Remove chimeras (method = ", opt$chimeraMethod, ")\n", sep="")
@@ -230,8 +238,42 @@ colnames(track) <- c("input", "filtered", "denoised", "non-chimeric")
 passed.filtering <- track[,"filtered"] > 0
 track[passed.filtering,"denoised"] <- rowSums(seqtab)
 track[passed.filtering,"non-chimeric"] <- rowSums(seqtab.nochim)
-write.table(track, file.path(opt$out_dir,paste(opt$RUN_NAME,"sample_reads.tsv", sep = ".")), sep="\t", row.names=TRUE, col.names=NA,  quote=FALSE)
-cat("Report stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"sample_reads.tsv", sep = ".")),"\n",sep = "")
+write.table(track, file.path(opt$out_dir,paste(opt$PROJECT_RUN,"sample_reads.tsv", sep = ".")), sep="\t", row.names=TRUE, col.names=NA,  quote=FALSE)
+cat("Report stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_RUN,"sample_reads.tsv", sep = ".")),"\n",sep = "")
+
+##############################################################################
+###                             SAVE SETTINGS                              ###
+##############################################################################
+cat("6) Save settings\n")
+
+# Copy prior settings file
+set_file <- list.files(opt$in_dir, pattern=".settings$", full.names=TRUE)
+out_file <- file.path(opt$out_dir, paste(opt$PROJECT_RUN,"settings", sep = "."))
+file.copy(from=set_file, to=out_file)
+
+# Add lines
+write("##############################################################################",file=out_file, append=TRUE)
+write("###                             DADA2 SETTINGS                             ###",file=out_file, append=TRUE)
+write("##############################################################################",file=out_file, append=TRUE)
+write("",file=out_file, append=TRUE)
+write("\tFOLDERS:",file=out_file, append=TRUE)
+write(paste("\t\tOutput:", opt$out_dir, sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tFiltered fastq:", opt$filter_dir,sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tReference DB:", opt$reference_dir, sep = " "),file=out_file, append=TRUE)
+write("\tADVANCED:",file=out_file, append=TRUE)
+write(paste("\t\tTruncations length:", opt$truncLen, "(The position at which to truncate reads. Reads shorter than truncLen will be discarded.)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\ttrimLeft:", opt$trimLeft, "(The number of nucleotides to remove from the start of each read)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tMaximum expected error (maxEE):",opt$maxEE, "(Reads with expected errors higher than maxEE are discarded)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tTruncation quality (truncQ):",opt$maxEE, "(Reads are truncated at the first instance of quality score truncQ If the read is then shorter than truncLen, it is discarded.)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tMaximum read length (maxLen):",opt$maxEE, "(Remove reads with length greater than maxLen. maxLen is enforced on the raw reads.)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tMethod for pooling (poolMethod):",opt$maxEE, "(The method used to pool (or not) samples during denoising)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tMethod to remove Chimera (chimeraMethod):",opt$maxEE, "(The method used to remove chimeras.)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tFold difference before testing for chimera (minParentFold):",opt$maxEE, "(The minimum abundance of potential 'parents' of a sequence being tested as chimeric, expressed as a fold-change versus the abundance of the sequence being tested)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tNumber of threads used (nthreads):",opt$maxEE, "(Special values: 0 - detect available cores and use all except one)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tNumber of reads used to learn the error model from. (nreads_learn):",opt$maxEE, "(Special values: 0 - Use all input reads.)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tHomopolymer gap penalty (HOMOPOLYMER_GAP_PENALTY):",opt$maxEE, "(The cost of gaps in homopolymer regions (>=3 repeated bases). Default is -1)", sep = " "),file=out_file, append=TRUE)
+write(paste("\t\tBand size (BAND_SIZE):",opt$maxEE, "(When set, banded Needleman-Wunsch alignments are performed. The default value of BAND_SIZE is 32. Setting BAND_SIZE to a negative number turns off banding (i.e. full Needleman-Wunsch).)", sep = " "),file=out_file, append=TRUE)
+write("",file=out_file, append=TRUE)
 
 ##############################################################################
 ###                 EXPORT AND STOP IF PARTIAL ANALYSIS                    ###
@@ -239,10 +281,10 @@ cat("Report stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"sample_reads.
 # Save seqtab
 sample.names <- stringr::str_remove(basename(filts),"\\.fastq")
 seq.out <- seqtab.nochim
-row.names(seq.out) <- paste(opt$RUN_NAME, sample.names, sep = "_")
-write.table(seq.out,file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.tsv",sep = ".")), sep = "\t",quote = FALSE)
-saveRDS(seq.out, file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.rds",sep = ".")))
-cat("seqtab file (needed to merge runs) stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"seqtab_out.rds", sep = ".")),"\n",sep = "")
+row.names(seq.out) <- sample.names
+write.table(seq.out,file.path(opt$out_dir,paste(opt$PROJECT_RUN,"seqtab_out.tsv",sep = ".")), sep = "\t",quote = FALSE)
+saveRDS(seq.out, file.path(opt$out_dir,paste(opt$PROJECT_RUN,"seqtab_out.rds",sep = ".")))
+cat("seqtab file (needed to merge runs) stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_RUN,"seqtab_out.rds", sep = ".")),"\n",sep = "")
 
 # Stop the script if running partial analysis
 if (opt$ANALYSIS == "PARTIAL") {
@@ -253,16 +295,16 @@ if (opt$ANALYSIS == "PARTIAL") {
 ###                     ASSIGN TAXONOMY AND PHYLOGENY                      ###
 ##############################################################################
 # Assign taxonomy
-cat("6) Assign taxonomy\n")
+cat("7) Assign taxonomy\n")
 taxa <- assignTaxonomy(seqtab.nochim, file.path(opt$reference_dir, "rdp_train_set_18.fa.gz"), multithread=TRUE, verbose=TRUE)
 taxa.plus <- addSpecies(taxa, file.path(opt$reference_dir, "rdp_species_assignment_18.fa.gz"), verbose=TRUE,allowMultiple = T)
 asv.names <- paste("ASV", stringr::str_pad(1:ncol(seqtab.nochim),4, pad = "0"), sep = "_")
 row.names(taxa.plus) <- asv.names
-write.table(taxa.plus, file = file.path(opt$out_dir,paste(opt$RUN_NAME,"taxonomy.txt", sep = ".")), row.names = asv.names)
-cat("Taxonomy stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"taxonomy.txt", sep = ".")),"\n",sep = "")
+write.table(taxa.plus, file = file.path(opt$out_dir,paste(opt$PROJECT_RUN,"taxonomy.txt", sep = ".")), row.names = asv.names)
+cat("Taxonomy stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_RUN,"taxonomy.txt", sep = ".")),"\n",sep = "")
 
 ### Construct Phylogenetic Tree
-cat("7) Create phylogenetic tree\n")
+cat("8) Create phylogenetic tree\n")
 # Extract sequences from DADA2 output
 sequences<-getSequences(seqtab.nochim)
 names(sequences)<-paste("ASV", stringr::str_pad(1:ncol(seqtab.nochim),4, pad = "0"), sep = "_")
@@ -291,17 +333,18 @@ fitGTR <- optim.pml(fitGTR, model="GTR", optInv=TRUE, optGamma=TRUE,
 ###                         CREATE PHYLOSEQ OBJECT                         ###
 ##############################################################################
 # Create phyloseq object
-cat("8) Create phyloseq object\n")
+cat("9) Create phyloseq object\n")
 # Rename ASVs and samples
 asv_table <- seqtab.nochim
 colnames(asv_table) <- paste("ASV", stringr::str_pad(1:ncol(seqtab.nochim),4, pad = "0"), sep = "_")
-row.names(asv_table) <- paste(opt$RUN_NAME, sample.names, sep = "_")
+row.names(asv_table) <- paste(opt$PROJECT_RUN, sample.names, sep = "_")
 
 # Create metadata file
 map <- data.frame(
   row.names = row.names(asv_table),
-  Sample = stringr::str_split(sample.names,"\\.",simplify=TRUE)[,2],
-  Run = opt$RUN_NAME,
+  Sample = stringr::str_split(sample.names,"\\.",simplify=TRUE)[,3],
+  Project = opt$PROJECT_NAME,
+  Seq_run = opt$SEQ_RUN,
   reads = rowSums(asv_table),
   ASVs = rowSums(asv_table > 0)
   )
@@ -317,7 +360,7 @@ is.rooted(phy_tree(phy))
 ###                              CREATE PLOTS                              ###
 ##############################################################################
 # Create a plot of richness compared to read_count
-ggsave(filename = paste(opt$RUN_NAME,"ASVs_vs_reads.pdf", sep = "."),
+ggsave(filename = paste(opt$PROJECT_RUN,"ASVs_vs_reads.pdf", sep = "."),
   plot = ggplot(map, aes(x = reads, y = ASVs)) + geom_point() + geom_smooth(method=lm, se=FALSE, col='red', size=2),
   device = "pdf",
   path = opt$out_dir,
@@ -326,13 +369,13 @@ ggsave(filename = paste(opt$RUN_NAME,"ASVs_vs_reads.pdf", sep = "."),
   units = "cm",
   dpi = 300)
 
-cat("Plot comparing read depth and number of ASVs stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"ASVs_vs_reads.pdf", sep = ".")),"\n",sep = "")
+cat("Plot comparing read depth and number of ASVs stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_RUN,"ASVs_vs_reads.pdf", sep = ".")),"\n",sep = "")
 
 ##############################################################################
 ###                        EXPORT PHYLOSEQ OBJECT                          ###
 ##############################################################################
 # Export data
-save(phy, file = file.path(opt$out_dir,paste(opt$RUN_NAME,"phyloseq_object.RData", sep = ".")))
-cat("Final phyloseq object (phy) stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"phyloseq_object.RData", sep = ".")),"\n",sep = "")
+save(phy, file = file.path(opt$out_dir,paste(opt$PROJECT_RUN,"phyloseq_object.RData", sep = ".")))
+cat("Final phyloseq object (phy) stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_RUN,"phyloseq_object.RData", sep = ".")),"\n",sep = "")
 
 q(save="no",status=0)

@@ -1,7 +1,5 @@
 #! ~/miniconda3/envs/DF-2022.1/bin/Rscript
 
-# Created:  2022-05-20 (masmo)
-# Updated: 
 ##############################################################################
 # This R script merges multiple runs with standard settings for DTU FOOD Gut
 # Microbio group using the DF-2022.1 conda environment. Standard use is to run 
@@ -51,6 +49,7 @@ cat("PACKAGES USED:\nDADA2:", as.character(packageVersion("dada2")), "|",
 option_list = list(
   make_option(c("-s", "--settings_file"), type="character", default=NULL, help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
   make_option(c("-o", "--out_dir"), type="character", default="./out", help="File path for all output", metavar="character"),
+  make_option(c("-p", "--PROJECT_NAME"), type="character", default="", help="Name of project to merge, files without this variable in name is not included", metavar="character"),
   make_option(c("-r", "--reference_dir"), type="character", default="../DB", help="This file path has data from the prior script and this together",metavar="character"),
   make_option(c("-n", "--nthreads"), type="numeric", default=0, help="The number of threads to use. Special values: 0 - detect available cores and use all except one.", metavar="number")
 ); 
@@ -62,26 +61,27 @@ opt = parse_args(opt_parser);
 ###                        IMPORT ARGUMENTS FROM FILE                      ###
 ##############################################################################
 # Import settings from settings file if provided
-if (!is.null(opt$settings_file) | file.exists(Sys.getenv("ANALYSIS_FILE"))){
-  if (is.null(opt$settings_file)){
-    tmp <- read.table(Sys.getenv("ANALYSIS_FILE"), header = F, comment.char = "#")
-  } else tmp <- read.table(opt$settings_file, header = F, comment.char = "#")
-  vars <- as.data.frame( t( stringr::str_split(tmp[,2], "=", simplify = T ) ) )
-  colnames(vars) <- vars[1,]
-  vars <- vars[2,]
-
-  suppressWarnings(for (i in 1:ncol(vars)) {
-    if (!is.na(as.numeric(vars[,i]))) vars[,i] <-as.numeric(vars[,i]) 
-  })
+if (!is.null(opt$settings_file)) {
+  tmp <- readLines(opt$settings_file)
+  tmp <- tmp[grepl("export",tmp)]
+  var.tmp <- stringr::str_split(tmp[!grepl("in_dir",tmp)], " ", simplify = T )[,2]
+  vars <- as.data.frame( stringr::str_split(var.tmp, "=", simplify = T ) )
+  row.names(vars) <- vars[,1]
+  vars$V1 <- NULL
+  
+  # Fix the out_dir variable
+  if (vars["out_dir",] == "$OUT") vars["out_dir",] <- vars["OUT",] 
 
   # replace settings in opt
-  for (i in 1:(length(opt)-1)){
-    if (names(opt)[i] != "settings_file") opt[i][[1]] <- vars[names(opt)[i]][[1]]
+  for (i in 1:(length(opt))){
+    if (names(opt)[i] != "settings_file") opt[i][[1]] <- ifelse(is.numeric(opt[i][[1]]), as.numeric(vars[names(opt)[i],]),vars[names(opt)[i],])
   }
 
   rm(tmp, vars)
 }
-for (i in 1:(length(opt)-1)){
+
+# Remove unwanted characters
+for (i in 1:(length(opt))){
   if (is.character(opt[i][[1]])) opt[i][[1]] <- gsub("\\\"","",opt[i][[1]])
 }
 
@@ -102,12 +102,16 @@ if(opt$nthreads < 0) {
 ##############################################################################
 ###                           IMPORT AND MERGE                             ###
 ##############################################################################
-# All .rds files in the out_dir will be used
+# Indentify all .rds files in the out_dir
 cat("1) merging runs\n")
 incl.runs <- list.files(opt$out_dir, pattern="seqtab_out.rds$", full.names=TRUE)
 
+# Subset list to files from project
+incl.runs <- incl.runs[grepl(opt$PROJECT_NAME, incl.runs)]
+
 cat("The following files are being imported: ",incl.runs,sep = "\n")
 
+# Merge runs
 full.seqtab <- mergeSequenceTables(tables = incl.runs)
 
 ##############################################################################
@@ -119,8 +123,8 @@ taxa <- assignTaxonomy(full.seqtab, file.path(opt$reference_dir, "rdp_train_set_
 taxa.plus <- addSpecies(taxa, file.path(opt$reference_dir, "rdp_species_assignment_18.fa.gz"), verbose=TRUE,allowMultiple = T)
 asv.names <- paste("ASV", stringr::str_pad(1:ncol(full.seqtab),4, pad = "0"), sep = "_")
 row.names(taxa.plus) <- asv.names
-write.table(taxa.plus, file = file.path(opt$out_dir,"full_taxonomy.txt"), row.names = asv.names)
-cat("Taxonomy stored in: ",file.path(opt$out_dir,"full_taxonomy.txt"),"\n",sep = "")
+write.table(taxa.plus, file = file.path(opt$out_dir,paste(opt$PROJECT_NAME,"taxonomy.txt", sep = "_"), row.names = asv.names)
+cat("Taxonomy stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_NAME,"taxonomy.txt", sep = "_")),"\n",sep = "")
 
 ### Construct Phylogenetic Tree
 cat("3) Create phylogenetic tree\n")
@@ -162,8 +166,9 @@ colnames(asv_table) <- paste("ASV", stringr::str_pad(1:ncol(full.seqtab),4, pad 
 # Create metadata file
 map <- data.frame(
   row.names = row.names(asv_table),
-  Sample = stringr::str_split(row.names(asv_table),"\\.",simplify=TRUE)[,2],
-  Run = stringr::str_split(row.names(asv_table),"_",simplify=T)[,1],
+  Sample = stringr::str_split(sample.names,"\\.",simplify=TRUE)[,3],
+  Project = opt$PROJECT_NAME,
+  Seq_run = opt$SEQ_RUN,
   reads = rowSums(asv_table),
   ASVs = rowSums(asv_table > 0)
   )
@@ -178,7 +183,7 @@ phy_tree(phy) <- root(phy_tree(phy), sample(taxa_names(phy), 1), resolve.root = 
 ###                              CREATE PLOTS                              ###
 ##############################################################################
 # Create a plot of richness compared to read_count
-ggsave(filename = "full.ASVs_vs_reads.pdf",
+ggsave(filename = paste(opt$PROJECT_NAME,"ASVs_vs_reads.pdf",sep = ".",
   plot = ggplot(map, aes(x = reads, y = ASVs, color = Run)) + geom_point() + geom_smooth(method=lm, se=FALSE, size=2),
   device = "pdf",
   path = opt$out_dir,
@@ -187,12 +192,12 @@ ggsave(filename = "full.ASVs_vs_reads.pdf",
   units = "cm",
   dpi = 300)
 
-cat("Plot comparing read depth and number of ASVs stored in: ",file.path(opt$out_dir,paste(opt$RUN_NAME,"ASVs_vs_reads.pdf", sep = ".")),"\n",sep = "")
+cat("Plot comparing read depth and number of ASVs stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_NAME,"ASVs_vs_reads.pdf", sep = ".")),"\n",sep = "")
 
 ##############################################################################
 ###                        EXPORT PHYLOSEQ OBJECT                          ###
 ##############################################################################
-save(phy, file = file.path(opt$out_dir,"full.phyloseq_object.RData"))
-cat("Final phyloseq object (phy) stored in: ",file.path(opt$out_dir,"full.phyloseq_object.RData"),"\n",sep = "")
+save(phy, file = file.path(opt$out_dir,paste(opt$PROJECT_NAME,"phyloseq_object.RData",sep = ".")))
+cat("Final phyloseq object (phy) stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_NAME,"phyloseq_object.RData",sep = ".")),"\n",sep = "")
 
 q(save="no",status=0)
