@@ -247,7 +247,7 @@ cat("Report stored in: ",file.path(opt$out_dir,paste(opt$PROJECT_RUN,"sample_rea
 cat("6) Save settings\n")
 
 # Copy prior settings file
-set_file <- list.files(opt$in_dir, pattern=".settings$", full.names=TRUE)
+set_file <- list.files(opt$in_dir, paste(opt$PROJECT_RUN,"settings", sep = "."), full.names=TRUE)
 out_file <- file.path(opt$out_dir, paste(opt$PROJECT_RUN,"settings", sep = "."))
 file.copy(from=set_file, to=out_file)
 
