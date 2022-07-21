@@ -57,7 +57,7 @@ option_list = list(
   make_option(c("-P", "--PROJECT_NAME"), type="character", default=NA, help="Name of the current project", metavar="character"),
   make_option(c("-S", "--SEQ_RUN"), type="character", default=NA, help="Name of the sequencing run in which the samples were sequenced", metavar="character"),
   make_option(c("-i", "--in_dir"), type="character", default="./trimmed", help="File path to directory with the .fastq files to be processed", metavar="character"),
-  make_option(c("-o", "--out_dir"), type="character", default="./out", help="File path for all output", metavar="character"),
+  make_option(c("-o", "--out_dir"), type="character", default="./output", help="File path for all output", metavar="character"),
   make_option(c("-f", "--filter_dir"), type="character", default="./filtered", help="File path to directory in which to write the filtered .fastq.gz files. These files are intermediate for the full workflow. Currently they remain after the script finishes.", metavar="character"),
   make_option(c("-r", "--reference_dir"), type="character", default="../DB", help="This must point to the folder with the reference database",metavar="character"),
   make_option(c("-t", "--truncLen"), type="numeric", default=0, help="The position at which to truncate reads. Reads shorter than truncLen will be discarded. Special values: 0 - no truncation or length filtering.", metavar="number"),
@@ -89,7 +89,7 @@ if (!is.null(opt$settings_file)) {
   vars$V1 <- NULL
   
   # Create the in_dir variable
-  if (file.exists(as.character(vars["SAMPLE_FILE",]))) vars["in_dir",] <- paste(vars["SEQ_RUN",],"fastq", sep = "_") else vars["in_dir",] <- paste(vars["PROJECT_NAME",],"fastq", sep = "_")
+  if (!file.exists(as.character(vars["SAMPLE_FILE",]))) vars["in_dir",] <- paste(vars["SEQ_RUN",],"fastq", sep = "_") else vars["in_dir",] <- paste(vars["PROJECT_NAME",],"fastq", sep = "_")
 
   # Fix the out_dir variable
   if (vars["out_dir",] == "$OUT") vars["out_dir",] <- vars["OUT",] 
@@ -137,7 +137,7 @@ cat("Output folder:", opt$out_dir, "\n")
 # Stop script if output files already exist
 if(length(list.files(opt$out_dir, pattern=opt$PROJECT_RUN, full.names=FALSE)) > 0) errQuit("The planned output files already exists")
 
-# Stop script if  input folder does not exist
+# Stop script if input folder does not exist
 if(!dir.exists(opt$in_dir)) errQuit("Input directory does not exist.")
 
 ##############################################################################
@@ -146,7 +146,12 @@ if(!dir.exists(opt$in_dir)) errQuit("Input directory does not exist.")
 # Input directory is expected to contain .fastq file(s) that have not yet been 
 # filtered and globally trimmed to the same length.
 unfilts <- list.files(opt$in_dir, pattern=".fastq$", full.names=TRUE) # Finds fastq files
-unfilts <- unfilts[grepl(opt$PROJECT_RUN, unfilts)] # keeps only the ones named with the defined RUN_NAME
+
+if (grepl(opt$PROJECT_NAME,as.character(opt$in_dir))) {
+  unfilts <- unfilts[grepl(opt$PROJECT_RUN, unfilts)] # keeps only the ones named with the defined PROJECT_RUN
+} else {
+  unfilts <- unfilts[grepl(opt$SEQ_RUN, unfilts)]
+}
 
 # Stop if there are no matching input files
 if(length(unfilts) == 0) errQuit("No input files with the expected filename format found.")

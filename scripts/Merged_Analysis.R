@@ -133,10 +133,6 @@ if (!is.null(opt$PROJECT_NAME)) {
 
 write.table(taxa.plus, file = file.path(opt$out_dir,out_name), row.names = asv.names)
 cat("Taxonomy stored in: ",file.path(opt$out_dir,out_name),"\n",sep = "")
-} else {
-  write.table(taxa.plus, file = file.path(opt$out_dir,"merged.taxonomy.txt"), row.names = asv.names)
-  cat("Taxonomy stored in: ",file.path(opt$out_dir,"merged.taxonomy.txt"),"\n",sep = "")
-}
 
 ### Construct Phylogenetic Tree
 cat("3) Create phylogenetic tree\n")

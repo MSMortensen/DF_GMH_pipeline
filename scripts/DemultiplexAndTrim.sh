@@ -77,7 +77,6 @@ done
 
 echo "Report for trimming is stored in: $OUT/$SEQ_RUN.cutadapt_report.txt"
 rm $TRIM/$SEQ_RUN.unknown.fastq
-rm -r $DEMUX
 
 ##############################################################################
 ###                               RUN FASTQC                               ###

@@ -64,7 +64,7 @@ export DEMUX="demux"
 # Folder where trimmed files will be stored
 #	NOTE:   These files can be removed after analyses
 #           IF updated remember to update input folder for DADA2
-export TRIM="trimmed"
+export TRIM="${SEQ_RUN}_fastq"
 #
 # Folder where CutAdapt output files will be stored
 export OUT="output"
@@ -98,7 +98,7 @@ export nthreads=0
 ### FOLDERS
 # Input path for DADA2
 #	NOTE:   If a sample file is provided input fastq files will be moved
-if [ -z $SAMPLE_FILE ]; then export in_dir="trimmed"; elif [ ! -f $SAMPLE_FILE ]; then export in_dir="trimmed"; else export in_dir="${PROJECT_NAME}_fastq"; fi
+if [ -z $SAMPLE_FILE ]; then export in_dir=$TRIM; elif [ ! -f $SAMPLE_FILE ]; then export in_dir=$TRIM; else export in_dir="${PROJECT_NAME}_fastq"; fi
 #
 # Path where DADA2 output files will be stored
 #	NOTE: 	This should normally match the output folder for CutAdapt

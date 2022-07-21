@@ -89,4 +89,4 @@ if [ ! -f "$reference_dir/rdp_train_set_18.fa.gz" ]; then echo "The database to 
 if [ ! -f "$reference_dir/rdp_species_assignment_18.fa.gz" ]; then echo "The database to assign species is missing. please copy to $reference_dir"; fi
 if [ ! -f "$reference_dir/$INDECES" ]; then echo "The index file to demultiplex the fastq file is missing. please copy to $reference_dir"; fi
 
-if [ -z $SAMPLE_FILE ]; then echo "No sample file has been provided to rename demultiplexed files"; elif [ ! -f $SAMPLE_FILE ]; then echo "$SAMPLE_FILE is missing. This will cause renaming to fail and use the RunDADA2 script as if the \"SAMPLE FILE\" variable was not set"; fi
+if [ $SAMPLE_FILE == "NULL" ]; then echo "No sample file has been provided to rename demultiplexed files"; elif [ ! -f $SAMPLE_FILE ]; then echo "$SAMPLE_FILE is missing. This will cause renaming to fail and use the RunDADA2 script as if the \"SAMPLE FILE\" variable was not set"; fi
