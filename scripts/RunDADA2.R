@@ -52,7 +52,7 @@ cat("ADDITIONAL PACKAGES USED IF FULL PIPELINE IS RUN:\n",
 ##############################################################################
 # import and format arguments
 option_list = list(
-  make_option(c("-s", "--settings_file"), type="character", default="settings_pak.sh", help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
+  make_option(c("-s", "--settings_file"), type="character", default=NA, help='If a settings file is provided here the system variable (ANALYSIS_FILE) will be ignored', metavar="number"),
   make_option(c("-A", "--ANALYSIS"), type="character", default="FULL", help='When set to "PARTIAL", the analysis will be stopped after ASV calling as all following analyses are performed by the script Merge_Runs.R', metavar="number"),
   make_option(c("-P", "--PROJECT_NAME"), type="character", default=NA, help="Name of the current project", metavar="character"),
   make_option(c("-S", "--SEQ_RUN"), type="character", default=NA, help="Name of the sequencing run in which the samples were sequenced", metavar="character"),
@@ -87,7 +87,10 @@ if (!is.null(opt$settings_file)) {
   vars <- as.data.frame( stringr::str_split(var.tmp, "=", simplify = T ) )
   row.names(vars) <- vars[,1]
   vars$V1 <- NULL
-  
+
+  # Remove unwanted characters
+  for (i in 1:(length(vars)))if (is.character(vars[i][[1]])) vars[i][[1]] <- gsub("\\\"","",vars[i][[1]])
+
   # Create the in_dir variable
   if (!file.exists(as.character(vars["SAMPLE_FILE",]))) vars["in_dir",] <- paste(vars["SEQ_RUN",],"fastq", sep = "_") else vars["in_dir",] <- paste(vars["PROJECT_NAME",],"fastq", sep = "_")
 
@@ -100,11 +103,6 @@ if (!is.null(opt$settings_file)) {
   }
 
   rm(tmp, vars)
-}
-
-# Remove unwanted characters
-for (i in 1:(length(opt))){
-  if (is.character(opt[i][[1]])) opt[i][[1]] <- gsub("\\\"","",opt[i][[1]])
 }
 
 # Add PROJECT_RUN variable

@@ -72,7 +72,7 @@ printf "\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
 printf "\tINPUT:\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
 printf "\t\tRun name: $SEQ_RUN\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
 printf "\t\tProject name: $PROJECT_NAME\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
-printf "\t\tSample file: $INPUT\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
+printf "\t\tSample file: $SAMPLE_FILE\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
 printf "\tOUTPUT:\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
 printf "\t\tFastq files: $in_dir\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings
 printf "\n" >> $in_dir/$PROJECT_NAME.$SEQ_RUN.settings

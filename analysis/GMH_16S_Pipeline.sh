@@ -63,7 +63,7 @@ bash ../scripts/Check_if_ready.sh -s settings_B.sh
 
 ### STEP 3A: DEMULTIPLEX AND TRIM READS (incl QC)
 # > If multiple runs copy command and edit name of the settings file
-# > If multiple projects on one chip run only once
+# > If multiple projects on one chip run only once and use one of the settings files
 bash ../scripts/DemultiplexAndTrim.sh -s settings_A.sh
 
 ## STEP 3B: COPY FILES TO PROJECT FOLDER

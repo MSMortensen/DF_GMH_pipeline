@@ -18,12 +18,12 @@
 #
 ### SEQUENCING RUN NAME. This name will be used for all output files.
 #	USE ONLY ALPHANUMERIC CHARACTERS
-export SEQ_RUN="Run220707" 
+export SEQ_RUN="NAME_OF_SEQENCING_RUN" 
 #                               
 ### INPUT FILE
 # Name of the input fastq file
 #	NOTE:   Must be updated and it is recommend to use the full path
-export INPUT="/mnt/c/KaliFiles/Julius/R_2022_07_07_13_02_07_user_GSS5-0533-96-Bodil_Madsen_Julius.fastq"
+export INPUT="FULL_PATH_TO_FASTQ_FILE"
 #
 ##############################################################################
 ###                            NAMING SETTINGS                             ###
@@ -33,14 +33,14 @@ export INPUT="/mnt/c/KaliFiles/Julius/R_2022_07_07_13_02_07_user_GSS5-0533-96-Bo
 ### PROJECT NAME
 # Define the run name. This name will be used for all output files.
 #	USE ONLY ALPHANUMERIC CHARACTERS
-export PROJECT_NAME="Julius" 
+export PROJECT_NAME="PROJECT_NAME" 
 #
 ### SAMPLE NAMES
 # Name of file with sample names and tags
-#   NOTE:   This file does not need to contain all samples, only the ones that
-#           matches samples to include. b
-#   NOTE:   If not used set to NULL
-export SAMPLE_FILE="Julius_sample_tags.tsv"
+#   NOTE:   This file does not need to contain all samples, only one line for
+#           each sample to include. Only use letters, numbers, period or underscore.
+#   NOTE:   If not used set this variable to NULL
+export SAMPLE_FILE="sample_tags.tsv"
 #
 ##############################################################################
 ###                             DADA2 SETTINGS                             ###
