@@ -63,12 +63,12 @@ fi
 ###                          ANALYSIS INFORMATION                          ###
 ##############################################################################
 # General Info
-echo "This analysis if for run $SEQ_NAME as part of the project $PROJECT_NAME. "
+echo "This analysis if for run $SEQ_RUN as part of the project $PROJECT_NAME."
 if [ $ANALYSIS == "PARTIAL" ]
     then
-        echo "A partial analysis will be run. The script 'RunDADA2.R' will stop after asv calling and $out_dir/$PROJECT_NAME.$SEQ_NAME.seqtab_out.rds must be included as input to 'Merge_Runs.R'"
+        echo "A partial analysis will be run. The script 'RunDADA2.R' will stop after asv calling and $out_dir/$PROJECT_NAME.$SEQ_RUN.seqtab_out.rds must be included as input to 'Merge_Runs.R'"
     else 
-        echo "A full analysis will be run. The script 'RunDADA2.R' will produce a phyloseq object named 'phy' which can be loaded into R by loading the .RData file ($out_dir/$PROJECT_NAME.$SEQ_NAME.phyloseq_object.RData)"
+        echo "A full analysis will be run. The script 'RunDADA2.R' will produce a phyloseq object named 'phy' which can be loaded into R by loading the .RData file ($out_dir/$PROJECT_NAME.$SEQ_RUN.phyloseq_object.RData)"
 fi
 
 ##############################################################################
