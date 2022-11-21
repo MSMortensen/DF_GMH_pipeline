@@ -17,3 +17,4 @@ dependencies:
   - bioconductor-decipher
   - r-phangorn
   - r-optparse
+  - dos2unix
