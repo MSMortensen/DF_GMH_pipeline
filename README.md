@@ -64,6 +64,7 @@ conda install git
 # GROUP PIPELINE
 
 All files necessary to use the pipeline can be downloaded from github.
+The standard text to describe the pipeline can be found in the file `Bioinformatic analysis_default text.docx`
 
 To do this open Ubuntu and run the following command:
 
